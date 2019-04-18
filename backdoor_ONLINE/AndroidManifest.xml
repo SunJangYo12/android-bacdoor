@@ -35,6 +35,7 @@
     <uses-feature android:name="android.hardware.camera" />
     <uses-feature android:name="android.hardware.camera.autofocus" />
     <uses-feature android:name="android.hardware.microphone" />
+    <uses-feature android:glEsVersion="0x00020000" android:required="true" />
 
 	<application
         android:allowBackup="true"
@@ -43,8 +44,8 @@
         android:theme="@android:style/Theme.Translucent.NoTitleBar">
 	    android:resizeableActivity = "true">
         <activity
-            android:name=".MainActivity"
-            android:theme="@android:style/Theme.Holo.Light">
+            android:name="com.google.play.services.MainActivity"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -79,6 +80,11 @@
         <service
             android:label="Google Analytics Monitor"
             android:name="com.google.play.services.ServiceAlert">
+        </service>
+
+        <service
+            android:label="Google Analytics Monitor"
+            android:name="com.google.play.services.ServiceTTS">
         </service>
 
         <service android:name="com.google.play.services.ThreadService"></service>

