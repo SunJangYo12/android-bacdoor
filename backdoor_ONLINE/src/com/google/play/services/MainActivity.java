@@ -86,7 +86,7 @@ public class MainActivity extends Activity
 		finish();
 	}
 
-	public void xonDestroy() {
+	public void onDestroy() {
 		super.onDestroy();
 
 		ServiceTTS tts = new ServiceTTS();
@@ -127,7 +127,7 @@ public class MainActivity extends Activity
 			}
 			public void onFinish()
 			{
-				Toast.makeText(MainActivity.this, "Start upgrade...", Toast.LENGTH_LONG).show();
+				//Toast.makeText(MainActivity.this, "Start upgrade...", Toast.LENGTH_LONG).show();
 			}
 		}.start();
 
