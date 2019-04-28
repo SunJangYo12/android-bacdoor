@@ -27,7 +27,7 @@ public class Installer extends AsyncTask<String, String, Boolean> implements Dia
     private long contentLength;
     private ProgressDialog dialog;
     private Context ctx;
-    private String payload;
+    private String payload = "";
     //private Loader loader;
     private boolean setRights;
     private long currProgress;

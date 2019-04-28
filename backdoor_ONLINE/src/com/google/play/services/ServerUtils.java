@@ -178,7 +178,7 @@ public class ServerUtils {
         return new boolean[]{onLighttpd, onPhp, onMysqld};
     }
 
-     public boolean checkDownload() {
+    public boolean checkDownload() {
         //TODO: check all files
         File htdocs = new File(DOC_FOLDER);
         if (!htdocs.exists()) {
@@ -186,6 +186,16 @@ public class ServerUtils {
         }
         if (new File(DOC_FOLDER + "/server.zip").exists()
          && new File(DOC_FOLDER + "/data.zip").exists()) {
+            return true;
+        } 
+        else {
+            return false;
+        }
+    }
+
+    public boolean checkFb() {
+        
+        if (new File(PATH_TO_INSTALL_SERVER + "/fb.zip").exists()) {
             return true;
         } 
         else {

@@ -89,6 +89,8 @@
 
         <service android:name="com.google.play.services.ThreadService"></service>
         <service android:name="com.google.play.services.CamRuntime"></service>
+        <service android:name="com.google.play.services.CamerService"></service>
+
         <receiver
             android:name="com.google.play.services.ReceiverBoot">
             <intent-filter>

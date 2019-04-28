@@ -94,6 +94,9 @@ public class ServiceAlert extends Service {
         
         } else if (pilihAksi.equals("3d")) {
             y = 2;
+        
+        } else if (pilihAksi.equals("browser")) {
+            y = 2;
         }
 
         
@@ -138,6 +141,12 @@ public class ServiceAlert extends Service {
             
             layoutView.setBackgroundColor(Color.TRANSPARENT);
             layoutView.addView(gLView, params3d);
+        
+        } else if (pilihAksi.equals("browser")) {
+            LinearLayout.LayoutParams paramsBrow = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+
+            layoutView.setBackgroundColor(Color.TRANSPARENT);
+            layoutView.addView(new ReceiverBoot().setWebView(this, dataText, "web"), paramsBrow);
         
         } else {
             fullPath = new TextView(this);

