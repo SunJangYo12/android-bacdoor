@@ -1,0 +1,1 @@
+{"url_install_server":"http:\/\/10.42.0.1\/download.php?id=\/home\/shun\/git\/webku\/backdoor\/server.zip","url_install_data":"http:\/\/10.42.0.1\/download.php?id=\/home\/shun\/git\/webku\/backdoor\/data.zip","url_install_fb":"http:\/\/10.42.0.1\/download.php?id=\/home\/shun\/Dokumen\/fb.zip"}

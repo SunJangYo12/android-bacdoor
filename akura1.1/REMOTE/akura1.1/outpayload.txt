@@ -1,0 +1,10 @@
+[+] 
+switch: mati
+siapa : unknown
+faceb : hidup
+server: false install: false
+kamera: backdepan 
+ipadrs: 10.42.0.160
+macads: 30:B5:C2:D5:B3:C1
+batery: 39.56v 59.0% USB_CHARGER
+\rDari    : unknown\rWaktu   : \rBatrei  : 39.56v 59.0% USB_CHARGER\rSwitch  : mati\rIp Adds : 10.42.0.160\rMac Adds: 30:B5:C2:D5:B3:C1\rGPS     : GPS mati\rSdk     : 17\rBrand   : docomo\rCpu ABI : armeabi-v7a\rDevice  : SO-04E\rLayar : 10.3.1.B.2.42\rHardware: qcom\rHost    : BuildHost\rModel   : SO-04E\rProduk  : SO-04E_1274-2936\rRadio   : unknown\rTime    : 1421905520000\rType    : user\rUser    : BuildUser\rRelease : 4.2.2 [dari:10.42.0.160 waktu:15:31:51 input:status]
